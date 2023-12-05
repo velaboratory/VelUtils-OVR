@@ -1,19 +1,26 @@
 {
-  "name": "com.3d-group.unity-package-template",
-  "displayName": "3D Group - Unity package template",
-  "version": "1.1.3",
-  "description": "Template for creating Unity game engine packages",
-  "dependencies": {},
-  "homepage": "https://github.com/3d-group/unity-package-template.git",
+  "name": "com.vel.velutils-ovr",
+  "displayName": "VEL - VelUtils-OVR",
+  "version": "0.0.0",
+  "unity": "2022.3.2f1",
+  "description": "Wrappers, adaptations, extension of Oculus/Meta specific packages as VelUtils might interact with them",
+  "keywords": [
+    "unity",
+	"unity3d",
+	"upm",
+    "vel",
+    "utility"
+  ],
+  "homepage": "https://github.com/vel/velutils-ovr.git",
   "bugs": {
-    "url": "https://github.com/3d-group/unity-package-template/issues"
+    "url": "https://github.com/vel/velutils-ovr/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/3d-group/unity-package-template.git"
+    "url": "git+ssh://git@github.com/vel/velutils-ovr.git"
   },
   "license": "MIT",
-  "author": "3D Group (https://3d.fi/)",
+  "author": "VEL (https://vel.engr.uga.edu/)",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   }
