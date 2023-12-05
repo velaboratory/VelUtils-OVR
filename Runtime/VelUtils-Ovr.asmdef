@@ -1,0 +1,23 @@
+{
+    "name": "engr.vel.velutils-ovr",
+    "rootNamespace": "",
+    "references": [
+        "GUID:6055be8ebefd69e48b49212b09b47b2f",
+        "GUID:2a230cb87a1d3ba4a98bdc0ddae76e6c",
+        "GUID:a3e7656b45677bf4b85e02a291fe5569",
+        "GUID:1e55e2c4387020247a1ae212bbcbd381",
+        "GUID:d33a3000215420f4cb2ac97834661416",
+        "GUID:d44ac32a0c4ceef4c8947f232d8c8e11",
+        "GUID:7040c93f6035f5749888e6fdf5ef28f8",
+        "GUID:f64c9ebcd7899c3448a08dc9f9ddbe30"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
