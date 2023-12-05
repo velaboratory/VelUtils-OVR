@@ -19,7 +19,7 @@ Wrappers, adaptations, extension of Oculus/Meta specific packages as VelUtils mi
 
 ## How to use
 
-*Work In Progress*
+Chuck SharedOrigin prefab into your scene and point it at your local player GameObject (rig). Does rely on Meta Shared Anchors which requires some project setup in order to use (https://developer.oculus.com/documentation/unity/unity-shared-spatial-anchors/)
 
 ## Install
 
