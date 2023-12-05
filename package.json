@@ -1,7 +1,7 @@
 {
-  "name": "com.vel.velutils-ovr",
+  "name": "edu.uga.engr.vel.velutils-ovr",
   "displayName": "VEL - VelUtils-OVR",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "unity": "2022.3.2f1",
   "description": "Wrappers, adaptations, extension of Oculus/Meta specific packages as VelUtils might interact with them",
   "keywords": [
@@ -11,17 +11,17 @@
     "vel",
     "utility"
   ],
-  "homepage": "https://github.com/vel/velutils-ovr.git",
+  "homepage": "https://github.com/velaboratory/velutils-ovr.git",
   "bugs": {
-    "url": "https://github.com/vel/velutils-ovr/issues"
+    "url": "https://github.com/velaboratory/velutils-ovr/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/vel/velutils-ovr.git"
+    "url": "git+ssh://git@github.com/velaboratory/velutils-ovr.git"
   },
   "license": "MIT",
   "author": "VEL (https://vel.engr.uga.edu/)",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo /"Error: no test specified\" && exit 1"
   }
 }
