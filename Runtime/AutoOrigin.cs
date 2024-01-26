@@ -1,27 +1,28 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using TMPro;
 using UnityEngine;
 using VelNet;
 
 public class AutoOrigin : SyncState
 {
+    public Vector3 targetPosition;
+    public Quaternion targetRotation;
+    public string network_uuid;
+    public string local_uuid;
+    public List<ulong> requestedShares = new List<ulong>();
     public Transform rig;
+    public TMP_Text text;
+    public bool moving;
 
-    private Vector3 targetPosition;
-    private Quaternion targetRotation;
-    private string uuid;
-    private List<ulong> requestedShares = new List<ulong>();
-    
     protected override void ReceiveState(BinaryReader binaryReader)
     {
         var temp = binaryReader.ReadString();
-        if (temp != uuid)
+        if (temp != network_uuid)
         {
-            //try to get it (it should have been shared to me)
-            uuid = temp;
-            StartCoroutine(findAnchor());
-
+            network_uuid = temp;
+            StartCoroutine(eraseAnchor()); //clear the anchor now, because it's going to change
 
         }
         targetPosition = binaryReader.ReadVector3();
@@ -30,38 +31,72 @@ public class AutoOrigin : SyncState
 
     protected override void SendState(BinaryWriter binaryWriter)
     {
-        binaryWriter.Write(uuid);
+        binaryWriter.Write(network_uuid);
         binaryWriter.Write(transform.position);
         binaryWriter.Write(transform.rotation);
     }
 
+
+    // Start is called before the first frame update
+    protected override void Awake()
+    {
+        base.Awake();
+        network_uuid = PlayerPrefs.GetString("network_uuid", "");
+
+        StartCoroutine(findAnchor());
+
+    }
+
     IEnumerator findAnchor()
     {
-        yield return StartCoroutine(eraseAnchor()); //erase any existing anchor
-
-        OVRSpatialAnchor.LoadOptions options = new OVRSpatialAnchor.LoadOptions();
-        options.StorageLocation = OVRSpace.StorageLocation.Cloud;
-        options.Uuids = new System.Guid[] { System.Guid.Parse(uuid) };
-        var t = OVRSpatialAnchor.LoadUnboundAnchorsAsync(options);
-        yield return new WaitUntil(() => t.IsCompleted);
-
-        var anchors = t.GetResult();
-        if (anchors.Length > 0)
+        while (true)
         {
-            var t2 = anchors[0].LocalizeAsync();
-            yield return new WaitUntil(() => t2.IsCompleted);
-            if (t2.GetResult())
+            if (local_uuid != network_uuid && network_uuid != "") //don't do this if we've already found it, or it's not set to anything real
             {
-                var pose = anchors[0].Pose;
-                transform.position = pose.position;
-                transform.rotation = pose.rotation;
-                OVRSpatialAnchor anchor = gameObject.AddComponent<OVRSpatialAnchor>();
-                anchors[0].BindTo(anchor);
+                text.text = "Erasing anchor";
+                yield return StartCoroutine(eraseAnchor()); //erase any existing anchor
+                text.text = "Loading cloud anchor " + network_uuid;
+                OVRSpatialAnchor.LoadOptions options = new OVRSpatialAnchor.LoadOptions();
+                options.StorageLocation = OVRSpace.StorageLocation.Cloud;
+                options.Uuids = new System.Guid[] { System.Guid.Parse(network_uuid) };
+                var t = OVRSpatialAnchor.LoadUnboundAnchorsAsync(options);
+                yield return new WaitUntil(() => t.IsCompleted);
+
+                text.text = "Finished loading anchor";
+                var anchors = t.GetResult();
+
+
+                if (anchors != null && anchors.Length > 0)
+                {
+                    text.text = "Localizing anchor";
+                    var t2 = anchors[0].LocalizeAsync();
+                    yield return new WaitUntil(() => t2.IsCompleted);
+                    if (t2.GetResult())
+                    {
+                        text.text = "Anchor localized";
+                        local_uuid = network_uuid;
+
+                        var pose = anchors[0].Pose;
+                        transform.position = pose.position;
+                        transform.rotation = pose.rotation;
+                        OVRSpatialAnchor anchor = gameObject.AddComponent<OVRSpatialAnchor>();
+                        anchors[0].BindTo(anchor);
+
+                    }
+                }
+                else
+                {
+                    text.text = "Could not load anchor";
+                }
+            } else if(networkObject.IsMine && network_uuid == "" && !moving) //I own the anchor and haven't made one yet, make it now
+            {
+                yield return createAnchor();
             }
+            yield return new WaitForSeconds(1.0f);
         }
     }
 
-    IEnumerator eraseAnchor()
+    public IEnumerator eraseAnchor()
     {
         OVRSpatialAnchor anchor = this.GetComponent<OVRSpatialAnchor>();
         if (anchor != null)
@@ -75,11 +110,11 @@ public class AutoOrigin : SyncState
         yield return null;
     }
 
-    IEnumerator createAnchor()
+    public IEnumerator createAnchor()
     {
-        requestedShares.Clear();
+        network_uuid = "";
         yield return StartCoroutine(eraseAnchor());
-
+        text.text = "Creating anchor";
         OVRSpatialAnchor anchor = gameObject.AddComponent<OVRSpatialAnchor>();
         while (!anchor.Created && !anchor.Localized)
         {
@@ -87,43 +122,42 @@ public class AutoOrigin : SyncState
 
         }
 
+        text.text = "Anchor created";
+
         var t2 = anchor.SaveAsync();
         yield return new WaitUntil(() => t2.IsCompleted);
+        text.text = "Anchor saved locally: " + t2.GetResult() + "\nSaving to Cloud";
+        yield return new WaitForSeconds(1.0f);
         OVRSpatialAnchor.SaveOptions so = new OVRSpatialAnchor.SaveOptions();
         so.Storage = OVRSpace.StorageLocation.Cloud;
+
         var t3 = anchor.SaveAsync(so);
 
         yield return new WaitUntil(() => t3.IsCompleted); //save to cloud!
 
-        if (networkObject.IsMine)
+        var res = t3.GetResult();
+        if (res && networkObject.IsMine)
         {
-            uuid = anchor.Uuid.ToString();
-            PlayerPrefs.SetString("uuid", uuid);
 
-
+            network_uuid = anchor.Uuid.ToString();
+            local_uuid = network_uuid;
+            PlayerPrefs.SetString("network_uuid", network_uuid);
+            requestedShares.Clear(); //time to update everyone
+            text.text = network_uuid;
+        }
+        else
+        {
+            text.text = "failed to save to anchor to cloud " + res;
         }
 
         yield return null;
     }
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        VelNetManager.OnJoinedRoom += Originate;
-    }
-
-    void Originate(string room)
-    {
-        if (networkObject.IsMine)
-        {
-            createAnchor();
-        }
-    }
     // Update is called once per frame
     void Update()
     {
-        var anchor = GetComponent<OVRSpatialAnchor>();
-        if (anchor != null && !networkObject.IsMine && anchor.enabled && anchor.Localized) //everyone else needs to move their rigs to compensate.  The owner doesn't
+        var anchor = gameObject.GetComponent<OVRSpatialAnchor>();
+        if (anchor && !networkObject.IsMine && anchor.enabled && anchor.Localized) //everyone else needs to move their rigs to compensate.  The owner doesn't
         {
             Vector3 anchorPosition = anchor.transform.position;
             Quaternion anchorRotation = anchor.transform.rotation;
@@ -140,18 +174,21 @@ public class AutoOrigin : SyncState
 
 
 
-        MetaIDSync[] playerSyncIDs = FindObjectsByType<MetaIDSync>(FindObjectsSortMode.None);
+        MetaIDSync[] playerSyncIDs = FindObjectsOfType<MetaIDSync>();
         foreach (var p in playerSyncIDs)
         {
-            if (p.networkObject.IsMine || !GetComponent<NetworkObject>().IsMine)
+            if (p.MetaID == 0 || p.networkObject.IsMine || !networkObject.IsMine)
             {
                 continue;
             }
-            if (!requestedShares.Contains(p.MetaID) && anchor != null && networkObject.IsMine && anchor.enabled && anchor.Localized)
+
+            if (!requestedShares.Contains(p.MetaID))
             {
                 OVRSpaceUser user = new OVRSpaceUser(p.MetaID);
-                GetComponent<OVRSpatialAnchor>().ShareAsync(user);
+
+                anchor.ShareAsync(user);
                 requestedShares.Add(p.MetaID);
+
             }
         }
     }
