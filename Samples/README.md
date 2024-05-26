@@ -10,6 +10,7 @@ since Unity does not provide standalone package testing solution.
 
 1. Create new Unity project
 2. Import your package in manifest.json and mark it as testable:
+
 ```json
 {
   "dependencies": {
