@@ -1,7 +1,7 @@
 {
   "name": "edu.uga.engr.vel.velutils-ovr",
   "displayName": "VelUtils-OVR",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "unity": "2022.3",
   "description": "Wrappers, adaptations, extension of Oculus/Meta specific packages as VelUtils might interact with them",
   "keywords": [

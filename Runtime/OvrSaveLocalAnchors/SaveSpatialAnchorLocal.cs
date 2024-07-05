@@ -60,54 +60,67 @@ public class SaveSpatialAnchorLocal : MonoBehaviour
 		arAlignment.Log("Saved spatial anchor");
 	}
 
-	private async void Load()
+	private void Load()
 	{
 		for (int i = 0; i < 2; i++)
 		{
-			string uuid = PlayerPrefsJson.GetString($"arAlignmentSpatialAnchor_{SceneManager.GetActiveScene().name}_{i}", null);
-			if (uuid != null)
+			string uuid = PlayerPrefsJson.GetString($"arAlignmentSpatialAnchor_{SceneManager.GetActiveScene().name}_{i}");
+			if (!string.IsNullOrEmpty(uuid))
 			{
-				Guid[] uuids = new Guid[1];
-				uuids[0] = new Guid(uuid);
-				OVRSpatialAnchor.LoadOptions loadOptions = new OVRSpatialAnchor.LoadOptions
-					{ Timeout = 0, StorageLocation = OVRSpace.StorageLocation.Local, Uuids = uuids };
-
-				OVRSpatialAnchor.UnboundAnchor[] anchors = await OVRSpatialAnchor.LoadUnboundAnchorsAsync(loadOptions);
-				if (anchors == null || anchors.Length != 1)
+				try
 				{
-					arAlignment.Log("Failed to load unbound anchor");
-					continue;
+					_ = LoadAnchorAsync(uuid, i);
 				}
-
-				OVRSpatialAnchor.UnboundAnchor unboundAnchor = anchors[0];
-				if (!(await unboundAnchor.LocalizeAsync()))
+				catch (Exception e)
 				{
-					arAlignment.Log("Failed to localize anchor");
-					return;
+					arAlignment.Log("Failed to load anchor: " + e.Message);
+					PlayerPrefsJson.SetString($"arAlignmentSpatialAnchor_{SceneManager.GetActiveScene().name}_{i}", "");
 				}
-
-				Pose pose = unboundAnchor.Pose;
-				arAlignment.SpawnPoint(i, pose.position); // verify that the point exists in the world
-				GameObject go = arAlignment.pointObjects[i];
-				go.transform.position = pose.position; // shouldn't be necessary
-				go.transform.rotation = pose.rotation;
-				OVRSpatialAnchor anchor = go.GetComponent<OVRSpatialAnchor>();
-				if (anchor == null)
-				{
-					anchor = go.AddComponent<OVRSpatialAnchor>();
-				}
-				else
-				{
-					await anchor.EraseAsync();
-				}
-
-				unboundAnchor.BindTo(anchor);
 			}
 			else
 			{
 				arAlignment.Log("Didn't load anchor " + i + " because it wasn't saved in playerprefs");
 			}
 		}
+	}
+
+	private async Task LoadAnchorAsync(string uuid, int i)
+	{
+		Guid[] uuids = new Guid[1];
+		uuids[0] = new Guid(uuid);
+		OVRSpatialAnchor.LoadOptions loadOptions = new OVRSpatialAnchor.LoadOptions
+			{ Timeout = 0, StorageLocation = OVRSpace.StorageLocation.Local, Uuids = uuids };
+
+		OVRSpatialAnchor.UnboundAnchor[] anchors = await OVRSpatialAnchor.LoadUnboundAnchorsAsync(loadOptions);
+		if (anchors == null || anchors.Length != 1)
+		{
+			arAlignment.Log("Failed to load unbound anchor");
+			return;
+		}
+
+		OVRSpatialAnchor.UnboundAnchor unboundAnchor = anchors[0];
+		if (!(await unboundAnchor.LocalizeAsync()))
+		{
+			arAlignment.Log("Failed to localize anchor");
+			return;
+		}
+
+		Pose pose = unboundAnchor.Pose;
+		arAlignment.SpawnPoint(i, pose.position); // verify that the point exists in the world
+		GameObject go = arAlignment.pointObjects[i];
+		go.transform.position = pose.position; // shouldn't be necessary
+		go.transform.rotation = pose.rotation;
+		OVRSpatialAnchor anchor = go.GetComponent<OVRSpatialAnchor>();
+		if (anchor == null)
+		{
+			anchor = go.AddComponent<OVRSpatialAnchor>();
+		}
+		else
+		{
+			await anchor.EraseAsync();
+		}
+
+		unboundAnchor.BindTo(anchor);
 	}
 
 	private void Update()
